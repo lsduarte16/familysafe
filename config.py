@@ -1,20 +1,12 @@
 # Configuración de cámaras
 CAMERAS_CONFIG = {
     "camera1": {
-        "name": "Cámara Patio",
-        "ip": "192.168.1.X",
+        "name": "Cámara living",
+        "ip": "192.168.100.35",
         "user": "admin",
-        "password": "password",
+        "password": "admin",
         "type": "hikvision",
-        "stream_url": "rtsp://{user}:{password}@{ip}:554/Streaming/Channels/101"
-    },
-    "camera2": {
-        "name": "Cámara Living",
-        "ip": "192.168.1.Y",
-        "user": "admin",
-        "password": "password",
-        "type": "hikvision",
-        "stream_url": "rtsp://{user}:{password}@{ip}:554/Streaming/Channels/101"
+        "stream_url": "rtsp://{user}:{password}@{ip}:554/h264/ch1/main/av_stream"
     }
 }
 
@@ -29,16 +21,14 @@ MONITORING_CONFIG = {
 # Configuración de sistema
 SYSTEM_CONFIG = {
     "temp_threshold": 70,  # temperatura máxima CPU
-    "log_file": "monitor.log",
-    "log_level": "INFO",  # nuevo: nivel de logging configurable
     "github_repo": "https://github.com/lsduarte16/familysafe.git",
     "branch": "main",
     "health_check_enabled": True,  # nuevo: toggle para health checks
     "logs": {
-        "main_log": "/var/log/familysafe/monitor.log",
-        "error_log": "/var/log/familysafe/error.log",
-        "access_log": "/var/log/familysafe/access.log",
-        "max_size": 10485760,  # 10MB
+        "main_log": "logs/monitor.log",  # Ruta relativa
+        "error_log": "logs/error.log",   # Ruta relativa
+        "access_log": "logs/access.log", # Ruta relativa
+        "max_size": 10485760,            # 10MB
         "backup_count": 5,
         "log_level": "INFO",
         "rotation": "daily"

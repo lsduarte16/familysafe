@@ -103,7 +103,12 @@ def setup_security():
             os.chmod('.env', 0o600)
         
         # Asegurar permisos del directorio de logs
-        log_dir = os.path.dirname(SYSTEM_CONFIG['log_file'])
+        log_dir = os.path.dirname(SYSTEM_CONFIG['logs']['main_log'])
+        
+        # Si no hay directorio, usar uno por defecto
+        if not log_dir:
+            log_dir = os.path.join(os.getcwd(), "logs")
+            
         if not os.path.exists(log_dir):
             os.makedirs(log_dir, mode=0o755)
             
@@ -111,6 +116,8 @@ def setup_security():
         if not os.access(log_dir, os.W_OK):
             logging.error(f"No hay permisos de escritura en {log_dir}")
             sys.exit(1)
+            
+        logging.info(f"Directorio de logs configurado: {log_dir}")
     except Exception as e:
         logging.error(f"Error configurando seguridad: {e}")
         sys.exit(1)
