@@ -14,6 +14,7 @@ import sys
 from config import CAMERAS_CONFIG, MONITORING_CONFIG, SYSTEM_CONFIG, NOTIFICATION_CONFIG
 import signal
 import psutil
+import subprocess
 from logging.handlers import RotatingFileHandler
 
 def setup_logging():
@@ -59,6 +60,7 @@ class Monitor:
         self.setup_mongodb()
         self.setup_cameras()
         self.last_health_check = time.time()
+        self.last_update_check = time.time()  # Nueva variable para control de actualizaciones
         self.running = True
         signal.signal(signal.SIGTERM, self.handle_shutdown)
         signal.signal(signal.SIGINT, self.handle_shutdown)
@@ -148,14 +150,48 @@ class Monitor:
                 "Content-Type": "application/json"
             }
 
+            prompt = """
+            Eres un asistente de monitoreo para adultos mayores. Analiza esta imagen de la cámara de seguridad donde pueden aparecer:
+            - "Mamita María" (abuela)
+            - "Papito Jorge" (abuelo)
+            
+            Por favor proporciona:
+            
+            1. DESCRIPCIÓN: Describe detalladamente la escena, quién aparece, qué están haciendo, y cualquier objeto o situación relevante.
+            
+            2. ACTIVIDAD: Identifica si están realizando alguna actividad de su rutina diaria como:
+               - Comiendo
+               - Caminando
+               - Descansando
+               - Viendo televisión
+               - Recibiendo visitas
+               - Tomando medicamentos
+               - Otra actividad (especificar)
+            
+            3. NIVEL DE RIESGO: Clasifica la situación en una escala de 1 a 5:
+               - Nivel 1: Normal, sin riesgos aparentes
+               - Nivel 2: Atención leve (posible situación a monitorear)
+               - Nivel 3: Precaución (situación que requiere verificación)
+               - Nivel 4: Alerta (posible situación de riesgo)
+               - Nivel 5: Emergencia (situación crítica que requiere intervención inmediata)
+            
+            4. JUSTIFICACIÓN: Explica brevemente por qué asignaste ese nivel de riesgo.
+            
+            Responde con estos cuatro apartados claramente separados.
+            """
+
             payload = {
                 "messages": [
+                    {
+                        "role": "system",
+                        "content": "Eres un asistente especializado en monitoreo de adultos mayores, enfocado en seguridad y bienestar."
+                    },
                     {
                         "role": "user",
                         "content": [
                             {
                                 "type": "text",
-                                "text": "¿Qué ves en esta imagen? Detecta personas, objetos o situaciones anormales."
+                                "text": prompt
                             },
                             {
                                 "type": "image_url",
@@ -179,7 +215,8 @@ class Monitor:
                 return {
                     "timestamp": datetime.now(timezone.utc),
                     "camera": camera_name,
-                    "analysis": analysis_result['choices'][0]['message']['content']
+                    "analysis": analysis_result['choices'][0]['message']['content'],
+                    "raw_response": analysis_result  # Opcional: guardar respuesta completa
                 }
             else:
                 logging.error(f"Error en API GPT-4V: {response.status_code}")
@@ -214,9 +251,53 @@ class Monitor:
 
         except Exception as e:
             logging.error(f"Error en health check: {e}")
+            
+    def check_for_updates(self):
+        """Verifica y aplica actualizaciones desde GitHub"""
+        try:
+            logging.info("Verificando actualizaciones desde GitHub...")
+            
+            # Verificar si hay cambios en el repositorio
+            result = subprocess.run(['git', 'fetch'], capture_output=True, text=True)
+            if result.returncode != 0:
+                logging.error(f"Error al verificar actualizaciones: {result.stderr}")
+                return
+                
+            # Verificar si hay commits nuevos
+            result = subprocess.run(['git', 'rev-list', 'HEAD..origin/main', '--count'], 
+                                   capture_output=True, text=True)
+            
+            if result.returncode == 0 and result.stdout.strip() != '0':
+                logging.info(f"Se encontraron {result.stdout.strip()} commits nuevos")
+                
+                # Guardar logs antes de actualizar
+                logging.info("Aplicando actualizaciones...")
+                
+                # Realizar pull
+                result = subprocess.run(['git', 'pull', 'origin', 'main'], 
+                                       capture_output=True, text=True)
+                
+                if result.returncode == 0:
+                    logging.info("Actualización exitosa. Reiniciando servicio...")
+                    
+                    # Notificar al administrador
+                    self.notify_admin("Sistema actualizado automáticamente. Reiniciando servicio.")
+                    
+                    # Reiniciar el servicio
+                    subprocess.run(['sudo', 'systemctl', 'restart', 'familysafe'])
+                    
+                    # No es necesario hacer más, el servicio se reiniciará
+                    sys.exit(0)
+                else:
+                    logging.error(f"Error al actualizar: {result.stderr}")
+            else:
+                logging.info("No hay actualizaciones disponibles")
+                
+        except Exception as e:
+            logging.error(f"Error verificando actualizaciones: {e}")
 
     def monitor_loop(self):
-        """Loop principal mejorado"""
+        """Loop principal mejorado con actualizaciones automáticas"""
         while self.running:
             try:
                 current_time = time.time()
@@ -225,6 +306,12 @@ class Monitor:
                 if (current_time - self.last_health_check) >= MONITORING_CONFIG['health_check_interval']:
                     self.check_system_health()
                     self.last_health_check = current_time
+                
+                # Verificación de actualizaciones (cada 24 horas por defecto)
+                update_interval = MONITORING_CONFIG.get('update_check_interval', 86400)  # 24 horas en segundos
+                if (current_time - self.last_update_check) >= update_interval:
+                    self.check_for_updates()
+                    self.last_update_check = current_time
                 
                 for camera_id in self.cameras:
                     image_path = self.capture_image(camera_id)
@@ -249,6 +336,12 @@ class Monitor:
 
 def main():
     monitor = Monitor()
+    
+    # Verificar actualizaciones al inicio
+    logging.info("Verificando actualizaciones al inicio...")
+    monitor.check_for_updates()
+    
+    # Continuar con el loop normal
     monitor.monitor_loop()
 
 if __name__ == "__main__":

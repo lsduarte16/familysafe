@@ -12,10 +12,11 @@ CAMERAS_CONFIG = {
 
 # Configuración de monitoreo
 MONITORING_CONFIG = {
-    "interval": 30,  # segundos entre capturas
+    "interval": 30,  # 5 minutos entre capturas
     "max_retries": 3,  # intentos de reconexión
-    "retry_delay": 5,  # segundos entre reintentos
-    "health_check_interval": 300  # segundos entre chequeos de salud
+    "retry_delay": 60,  # 1 minuto entre reintentos
+    "health_check_interval": 3600,  # 1 hora entre health checks
+    "update_check_interval": 86400  # 24 horas entre verificaciones de actualización
 }
 
 # Configuración de sistema
