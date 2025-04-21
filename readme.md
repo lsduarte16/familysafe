@@ -84,13 +84,13 @@ journalctl -u familysafe
 
 ### Ejecución Manual
 bash
-python3 monitor_dogs.py
+python3 monitor.py
 
 
 ## 📊 Monitoreo y Logs
 
-- Logs principales: `/var/log/dogmonitor.log`
-- Estado del sistema: `systemctl status dogmonitor`
+- Logs principales: `logs/monitor.log`
+- Estado del sistema: `systemctl status monitor`
 - Métricas de MongoDB: Accesibles via MongoDB Atlas
 
 ## 🔒 Seguridad
