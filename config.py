@@ -7,6 +7,14 @@ CAMERAS_CONFIG = {
         "password": "admin",
         "type": "hikvision",
         "stream_url": "rtsp://{user}:{password}@{ip}:554/h264/ch1/main/av_stream"
+    },
+    "camera2": {
+        "name": "Cámara Comedor",
+        "ip": "192.168.100.36",
+        "user": "admin",
+        "password": "Seba1678",
+        "type": "hikvision",
+        "stream_url": "rtsp://{user}:{password}@{ip}:554/Streaming/Channels/101"
     }
 }
 
@@ -45,8 +53,8 @@ NOTIFICATION_CONFIG = {
     "email_config": {
         "smtp_server": "smtp.gmail.com",
         "smtp_port": 587,
-        "sender_email": "your-email@gmail.com",
-        "admin_email": "admin@example.com"
+        "sender_email": "lsduarteh@gmail.com",
+        "admin_email": "lsduarteh@gmail.com"
     },
     "telegram_config": {
         "bot_token": "",
